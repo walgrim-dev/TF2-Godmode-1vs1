@@ -1,4 +1,4 @@
-# TF2-Dodgeball-Stats
+# TF2-Godmode-1vs1
 
 ## Presentation
 
