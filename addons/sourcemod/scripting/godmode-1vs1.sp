@@ -9,11 +9,9 @@
 
 #define LIMIT 2
 
-
 /* ConVars handles */
 
 ConVar cvar_godmodeEnabled = null;
-
 
 /* Variables */
 
@@ -34,8 +32,8 @@ public void OnPluginStart() {
 
 	// Hook Events
 	if (cvar_godmodeEnabled.BoolValue) {
-		HookEvent("player_team", OnChangeTeam);
-		HookEvent("teamplay_round_start", OnRoundStart);
+		HookEvent("player_team", OnChangeTeam, EventHookMode_PostNoCopy);
+		HookEvent("teamplay_round_start", OnRoundStart, EventHookMode_PostNoCopy);
 	}
 
 	AutoExecConfig(true, "tf2_godmode1vs1");
