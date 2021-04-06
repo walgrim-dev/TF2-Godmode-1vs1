@@ -88,24 +88,24 @@ public Action OnClientTakesDamage(int victim, int& attacker, int& inflictor, flo
 /* Enable/Disable godmode */
 void CheckGodmodeStatus() {
 
-    if (!cvar_godmodeEnabled.BoolValue) {
-        return;
-    }
+	if (!cvar_godmodeEnabled.BoolValue) {
+		return;
+	}
 
-    int players = GetTeamClientCount(2) + GetTeamClientCount(3);
+	int players = GetTeamClientCount(2) + GetTeamClientCount(3);
 
-    if (players == LIMIT) {
-        b_1v1Enabled = true;
+	if (players == LIMIT) {
+		b_1v1Enabled = true;
 
-        return;
-    }
+		return;
+	}
 
-    b_1v1Enabled = false;
+	b_1v1Enabled = false;
 }
 
 /* Stocks */
 
 stock bool IsEntityConnectedClient(int entity) {
-    return (0 < entity <= MaxClients && IsClientInGame(entity));
+	return (0 < entity <= MaxClients && IsClientInGame(entity));
 }
 
