@@ -5,118 +5,114 @@
 #include <sdktools>
 #include <sourcemod>
 
-/* Constants */
+#define PLUGIN_VERSION "1.1"
+#define LIMIT   2
+#define RED 2
+#define BLUE 3
 
-#define PLUGIN_VERSION "1.0"
-#define LIMIT          2
-
-/* ConVars handles */
-
+// ConVar 
 ConVar cvar_godmodeEnabled = null;
 
-/* Variables */
-
+// Variables 
 bool b_1v1Enabled = false;
 
-public Plugin myinfo =
-{
-	name        = "[TF2] Godmode 1vs1",
-	author      = "Walgrim",
-	description = "Enable godmode in 1vs1",
-	version     = PLUGIN_VERSION,
-	url         = "http://steamcommunity.com/id/walgrim/"
+public Plugin myinfo = {
+    name        = "[TF2] Godmode 1vs1",
+    author        = "Walgrim",
+    description = "Enable godmode in 1vs1",
+    version        = PLUGIN_VERSION,
+    url            = "http://steamcommunity.com/id/walgrim/"
 };
 
-public void OnPluginStart()
-{
-	// ConVars
-	CreateConVar("tf2_godmode1vs1_version", PLUGIN_VERSION, "Godmode 1vs1 Version", FCVAR_SPONLY | FCVAR_UNLOGGED | FCVAR_DONTRECORD | FCVAR_REPLICATED | FCVAR_NOTIFY);
-	cvar_godmodeEnabled = CreateConVar("tf2_godmode1vs1", "1", "Enable godmode 1vs1 on the server ?", _, true, 0.0, true, 1.0);
-
-	// Hook Events
-	if (cvar_godmodeEnabled.BoolValue)
-	{
-		HookEvent("player_team", OnChangeTeam, EventHookMode_PostNoCopy);
-		HookEvent("teamplay_round_start", OnRoundStart, EventHookMode_PostNoCopy);
-	}
-	AutoExecConfig(true, "tf2_godmode1vs1");
+public void OnPluginStart() {
+    // ConVars
+    CreateConVar("tf2_godmode1vs1_version", PLUGIN_VERSION, "Godmode 1vs1 Version", FCVAR_SPONLY | FCVAR_UNLOGGED | FCVAR_DONTRECORD | FCVAR_REPLICATED | FCVAR_NOTIFY);
+    cvar_godmodeEnabled = CreateConVar("tf2_godmode1vs1", "1", "Enable godmode 1vs1 on the server ?", _, true, 0.0, true, 1.0);
+    for (int i = 1; i <= MaxClients; i++) {
+        if (!IsThisAClient(i)) continue;
+        SDKHook(i, SDKHook_OnTakeDamage, OnDamage);
+    }
+    // Hook Events
+    if (cvar_godmodeEnabled.BoolValue) {
+        HookEvent("player_team", OnChangeTeam, EventHookMode_PostNoCopy);
+        HookEvent("teamplay_round_start", OnRoundStart, EventHookMode_PostNoCopy);
+    }
+    AutoExecConfig(true, "tf2_godmode1vs1");
 }
 
-/* Hook player damages */
-public void OnClientPutInServer(int client)
-{
-	if (cvar_godmodeEnabled.BoolValue && IsEntityConnectedClient(client))
-	{
-		SDKHook(client, SDKHook_OnTakeDamage, OnClientTakesDamage);
-	}
+/**
+ * Hook player damage.
+ */
+public void OnClientPutInServer(int client) {
+    if (cvar_godmodeEnabled.BoolValue && IsThisAClient(client)) {
+        SDKHook(client, SDKHook_OnTakeDamage, OnDamage);
+    }
 }
 
-/* Check on change team if the conditions are fulfilled (or not) */
-public void OnChangeTeam(Event event, const char[] name, bool dontBroadcast)
-{
-	// Delaying by 1 frame
-	RequestFrame(DelayCheck);
+/**
+ * Check conditions.
+ */
+public void OnChangeTeam(Event event, const char[] name, bool dontBroadcast) {
+    // 1 frame delay
+    RequestFrame(DelayCheck);
 }
 
-/* Check on round start if the conditions are fulfilled (or not) */
-public void OnRoundStart(Event event, const char[] name, bool dontBroadcast)
-{
-	// 1vs1
-	CheckGodmodeStatus();
+/**
+ * Check conditions.
+ */
+public void OnRoundStart(Event event, const char[] name, bool dontBroadcast) {
+    CheckGodmodeStatus();
 }
 
-public void OnClientDisconnect(int client)
-{
-	// 1vs1
-	CheckGodmodeStatus();
+public void OnClientDisconnect(int client) {
+    CheckGodmodeStatus();
 }
 
-/* Request Frame (delaying by 1 frame to get right team values) */
-void DelayCheck()
-{
-	// 1vs1
-	CheckGodmodeStatus();
+void DelayCheck() {
+    CheckGodmodeStatus();
 }
 
-/* Player Damages */
-
-/* Applies the new damage amount */
-public Action OnClientTakesDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3])
-{
-	if (b_1v1Enabled)
-	{
-		if (IsEntityConnectedClient(victim))
-		{
-			damage = 0.0;
-			return Plugin_Changed;
-		}
-	}
-	return Plugin_Continue;
+/**
+ * Hook player damage.
+ */
+public Action OnDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype, int& weapon, float damageForce[3], float damagePosition[3]) {
+    if (!b_1v1Enabled || !IsThisAClient(victim)) {
+        return Plugin_Continue;
+    }
+    damage = 0.0;
+    SimulateDeath(victim, inflictor);
+    return Plugin_Changed;
 }
 
-/* Functions */
+/**
+ * Simulates death to call "on explode".
+ * @param victim Victim id.
+ * @param inflictor Entity id. 
+ * @return void
+ */
+static void SimulateDeath(int victim, int inflictor) {    
+    Event event = CreateEvent("player_death");
+    if (event == null) {
+        return;
+    }
+    event.SetInt("userid", GetClientUserId(victim));
+    event.SetInt("inflictor_entindex", inflictor);
+    event.Fire(true);
+}
 
-/* Enable/Disable godmode */
-void CheckGodmodeStatus()
-{
-	if (!cvar_godmodeEnabled.BoolValue)
-	{
-		return;
-	}
-
-	int players = GetTeamClientCount(2) + GetTeamClientCount(3);
-	if (players == LIMIT)
-	{
-		b_1v1Enabled = true;
-
-		return;
-	}
-	b_1v1Enabled = false;
+/**
+ * 
+ */
+void CheckGodmodeStatus() {
+    if (!cvar_godmodeEnabled.BoolValue) {
+        return;
+    }
+    int players = GetTeamClientCount(RED) + GetTeamClientCount(BLUE);
+    b_1v1Enabled = (players != LIMIT) ? false : true;
 }
 
 /* Stocks */
 
-stock bool IsEntityConnectedClient(int entity)
-{
-	return (0 < entity <= MaxClients && IsClientInGame(entity));
+static stock bool IsThisAClient(int entity) {
+    return (0 < entity <= MaxClients && IsClientInGame(entity));
 }
