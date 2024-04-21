@@ -6,22 +6,21 @@
 #include <sourcemod>
 
 #define PLUGIN_VERSION "1.1"
-#define LIMIT   2
+#define LIMIT 2
 #define RED 2
 #define BLUE 3
 
 // ConVar 
 ConVar cvar_godmodeEnabled = null;
 
-// Variables 
 bool b_1v1Enabled = false;
 
 public Plugin myinfo = {
-    name        = "[TF2] Godmode 1vs1",
-    author        = "Walgrim",
+    name = "[TF2] Godmode 1vs1",
+    author = "Walgrim",
     description = "Enable godmode in 1vs1",
-    version        = PLUGIN_VERSION,
-    url            = "http://steamcommunity.com/id/walgrim/"
+    version = PLUGIN_VERSION,
+    url = "http://steamcommunity.com/id/walgrim/"
 };
 
 public void OnPluginStart() {
@@ -101,7 +100,7 @@ static void SimulateDeath(int victim, int inflictor) {
 }
 
 /**
- * 
+ * Checks if godmode should be enabled.
  */
 void CheckGodmodeStatus() {
     if (!cvar_godmodeEnabled.BoolValue) {
@@ -111,8 +110,10 @@ void CheckGodmodeStatus() {
     b_1v1Enabled = (players != LIMIT) ? false : true;
 }
 
-/* Stocks */
 
+/**
+ * Checks client validity.
+ */
 static stock bool IsThisAClient(int entity) {
     return (0 < entity <= MaxClients && IsClientInGame(entity));
 }
